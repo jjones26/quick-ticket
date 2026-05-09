@@ -2,15 +2,23 @@
 
 **Real-time classroom polling, emoji reactions, and exit tickets.** Teachers create a session in 10 seconds, students join with a code. Live results, no accounts, no friction.
 
-Inspired by Kahoot — minus the trivia gameshow energy. Built for serious classroom use: a quick pulse check, an exit ticket, a comprehension quiz.
+Inspired by Kahoot, minus the trivia gameshow energy. Built for serious classroom use: a quick pulse check, an exit ticket, a comprehension quiz.
 
 ---
+
+## How to Use
+
+1. Go to https://quick-ticket1.netlify.app/
+2. Click "Create a session"
+3. Choose activity type
+4. Add information as needed, then click create session
+5. Students visit quick-ticket1.netlify.app and join via room code or QR code
 
 ## Tech stack
 
 - **Frontend:** Vanilla HTML / CSS / JS (ES modules, no build step)
 - **Backend:** Firebase Firestore (real-time database)
-- **Hosting:** Netlify or Firebase Hosting (free tier)
+- **Hosting:** Netlify (free tier)
 - **Cost:** $0 at classroom scale
 
 No bundler. No npm. Open `index.html` in a browser, you're running it.
