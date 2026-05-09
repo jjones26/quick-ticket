@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vote — Quick Ticket</title>
+  <meta name="description" content="Quick Ticket — cast your vote" />
+  <meta property="og:title" content="Quick Ticket — Vote" />
+  <meta property="og:description" content="Join the session and share your response." />
+  <meta name="theme-color" content="#10B981" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='80' height='80' x='10' y='10' rx='16' fill='%2310B981'/><text x='50' y='68' font-size='52' font-weight='800' text-anchor='middle' fill='white' font-family='system-ui'>Q</text></svg>" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <main class="shell" style="max-width: 480px;">
+
+    <!-- Top bar -->
+    <header class="spread reveal reveal-1" style="margin-bottom: var(--s-5);">
+      <a href="index.html" class="logo">
+        <span class="logo-icon">Q</span>
+        Quick Ticket
+      </a>
+      <span class="badge badge--gray mono" id="room-code-display">------</span>
+    </header>
+
+    <!-- Loading state -->
+    <div id="loading-view" class="card reveal reveal-2">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p class="muted">Finding your session…</p>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div id="error-view" class="card hidden">
+      <div class="error-state">
+        <div class="error-icon">!</div>
+        <h2 id="error-title">Session not found</h2>
+        <p id="error-message">This session may have expired or the code might be wrong.</p>
+        <a href="index.html" class="btn btn--primary">Try a different code</a>
+      </div>
+    </div>
+
+    <!-- Session card -->
+    <div id="session-view" class="card hidden">
+      <p class="label" id="activity-label">Loading…</p>
+
+      <h1 id="question-text" style="font-size: clamp(1.25rem, 5vw, 1.75rem); margin-top: var(--s-2);">
+        …
+      </h1>
+
+      <hr class="divider" />
+
+      <!-- Vote area -->
+      <div id="vote-area"></div>
+
+      <!-- Confirmation (shown after voting) -->
+      <div id="confirmed" class="hidden center" style="padding: var(--s-5) 0;">
+        <div class="confirm-reveal">
+          <div class="check-circle">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+          </div>
+          <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: var(--s-2);">You're in!</p>
+          <p class="muted">Your response was recorded. The teacher can see it now.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { getRoomCodeFromURL, hasVotedInRoom } from './js/utils.js';
+    import { loadSession, renderVoteUI } from './js/play.js';
+
+    const code = getRoomCodeFromURL();
+    const loadingView = document.getElementById('loading-view');
+    const errorView = document.getElementById('error-view');
+    const sessionView = document.getElementById('session-view');
+    const voteArea = document.getElementById('vote-area');
+    const confirmed = document.getElementById('confirmed');
+
+    document.getElementById('room-code-display').textContent = code || '------';
+
+    function showError(title, message) {
+      loadingView.classList.add('hidden');
+      sessionView.classList.add('hidden');
+      errorView.classList.remove('hidden');
+      document.getElementById('error-title').textContent = title;
+      document.getElementById('error-message').textContent = message;
+    }
+
+    function showSession() {
+      loadingView.classList.add('hidden');
+      errorView.classList.add('hidden');
+      sessionView.classList.remove('hidden');
+    }
+
+    function showConfirmation() {
+      voteArea.classList.add('hidden');
+      confirmed.classList.remove('hidden');
+    }
+
+    if (!code) {
+      showError('No room code', 'Go back and enter a valid session code to join.');
+    } else if (hasVotedInRoom(code)) {
+      showSession();
+      document.getElementById('activity-label').textContent = 'Already voted';
+      document.getElementById('question-text').textContent = 'Thanks for your response!';
+      document.getElementById('vote-area').classList.add('hidden');
+      document.getElementById('divider')?.classList?.add('hidden');
+      showConfirmation();
+    } else {
+      loadSession(code).then((session) => {
+        if (!session) {
+          showError('Session not found', 'This session may have expired, been closed, or the code might be wrong.');
+          return;
+        }
+
+        showSession();
+        renderVoteUI(voteArea, session, {
+          onVoted: showConfirmation,
+        });
+      }).catch((err) => {
+        console.error('Load failed:', err);
+        showError('Connection error', 'Could not load the session. Check your internet connection and try again.');
+      });
+    }
+  </script>
+</body>
+</html>

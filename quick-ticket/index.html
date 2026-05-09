@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quick Ticket — Classroom Polls & Exit Tickets</title>
+  <meta name="description" content="Real-time classroom polling, emoji reactions, and exit tickets. No accounts. Free." />
+  <meta property="og:title" content="Quick Ticket — Classroom Polls & Exit Tickets" />
+  <meta property="og:description" content="Create a session, share the code, see live results. No accounts needed." />
+  <meta name="theme-color" content="#10B981" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='80' height='80' x='10' y='10' rx='16' fill='%2310B981'/><text x='50' y='68' font-size='52' font-weight='800' text-anchor='middle' fill='white' font-family='system-ui'>Q</text></svg>" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <main class="shell" style="max-width: 480px;">
+
+    <!-- Logo -->
+    <header class="center reveal reveal-1" style="margin-bottom: var(--s-8);">
+      <div style="display: flex; justify-content: center; margin-bottom: var(--s-6);">
+        <a href="index.html" class="logo">
+          <span class="logo-icon">Q</span>
+          Quick Ticket
+        </a>
+      </div>
+
+      <h1 style="font-size: clamp(2rem, 7vw, 2.75rem); letter-spacing: -0.03em;">
+        Polls & exit tickets,<br />
+        <span style="color: var(--green);">in seconds.</span>
+      </h1>
+      <p class="muted" style="margin-top: var(--s-3); max-width: 34ch; margin-inline: auto;">
+        Create a session, share the code, see live results. No accounts needed.
+      </p>
+    </header>
+
+    <!-- Join card -->
+    <div class="card reveal reveal-2" style="margin-bottom: var(--s-4);">
+      <p class="label" style="margin-bottom: var(--s-3);">Join a session</p>
+
+      <form id="join-form" onsubmit="return false;">
+        <div class="field">
+          <input
+            id="join-code"
+            class="input input--code"
+            type="text"
+            inputmode="latin"
+            autocomplete="off"
+            autocapitalize="characters"
+            maxlength="6"
+            placeholder="ABC123"
+            aria-label="Room code"
+          />
+        </div>
+        <button id="join-btn" class="btn btn--primary btn--block btn--lg" type="submit" style="margin-top: var(--s-4);">
+          Join →
+        </button>
+      </form>
+    </div>
+
+    <!-- Create card -->
+    <div class="card reveal reveal-3">
+      <p class="label" style="margin-bottom: var(--s-3);">I'm the teacher</p>
+      <a href="create.html" class="btn btn--secondary btn--block btn--lg">
+        Create a session
+      </a>
+    </div>
+
+    <!-- Footer -->
+    <footer class="center caption reveal reveal-4" style="margin-top: var(--s-7);">
+      <p>Built by <a href="https://jacobjones.dev">Jake Jones</a> · Free & open source</p>
+    </footer>
+  </main>
+
+  <script type="module">
+    const form = document.getElementById('join-form');
+    const input = document.getElementById('join-code');
+
+    input.addEventListener('input', () => {
+      input.value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = input.value.trim();
+      if (code.length < 4) {
+        input.focus();
+        input.style.borderColor = 'var(--red)';
+        input.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.12)';
+        input.addEventListener('input', () => {
+          input.style.borderColor = '';
+          input.style.boxShadow = '';
+        }, { once: true });
+        return;
+      }
+      window.location.href = `play.html?code=${encodeURIComponent(code)}`;
+    });
+  </script>
+</body>
+</html>

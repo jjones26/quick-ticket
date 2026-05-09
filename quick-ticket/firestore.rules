@@ -1,0 +1,49 @@
+// Firestore security rules for Quick Ticket
+//
+// Deploy these BEFORE going live. Without them, anyone could
+// write garbage to your database (the firebaseConfig keys are
+// public-by-design — rules are what actually protect you).
+//
+// To deploy: `firebase deploy --only firestore:rules`
+// Or paste in the Firebase console → Firestore → Rules.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Sessions: anyone can read; only the creator (with hostToken) can update.
+    // We allow create from anyone, but enforce shape via field validation.
+    match /sessions/{code} {
+      allow read: if true;
+
+      allow create: if
+        request.resource.data.type in ['poll', 'emoji', 'quiz']
+        && request.resource.data.question is string
+        && request.resource.data.question.size() <= 300
+        && request.resource.data.status == 'open'
+        && request.resource.data.hostToken is string
+        && request.resource.data.hostToken.size() >= 16;
+
+      // Updates restricted to status changes by the host.
+      // (Client must include the matching hostToken to prove ownership.)
+      allow update: if
+        resource.data.hostToken == request.resource.data.hostToken
+        && request.resource.data.diff(resource.data)
+             .affectedKeys().hasOnly(['status']);
+
+      allow delete: if false;
+
+      // Responses subcollection: anyone can create, no edits/deletes.
+      match /responses/{respId} {
+        allow read:   if true;
+        allow create: if
+          (request.resource.data.optionIndex is int
+            && request.resource.data.optionIndex >= 0
+            && request.resource.data.optionIndex <= 10)
+          || (request.resource.data.emoji is string
+            && request.resource.data.emoji.size() <= 8);
+        allow update, delete: if false;
+      }
+    }
+  }
+}

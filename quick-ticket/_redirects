@@ -1,0 +1,8 @@
+# Clean URLs: /host → /host.html, /play → /play.html, etc.
+# Query params (:splat) are preserved.
+/host/*    /host.html?:splat   200
+/play/*    /play.html?:splat   200
+/create/*  /create.html?:splat 200
+/host      /host.html          200
+/play      /play.html          200
+/create    /create.html        200

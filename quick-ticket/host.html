@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Session — Quick Ticket</title>
+  <meta name="description" content="Quick Ticket — live session results" />
+  <meta property="og:title" content="Quick Ticket — Live Session" />
+  <meta property="og:description" content="Real-time classroom polls, emoji reactions, and exit tickets." />
+  <meta name="theme-color" content="#10B981" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='80' height='80' x='10' y='10' rx='16' fill='%2310B981'/><text x='50' y='68' font-size='52' font-weight='800' text-anchor='middle' fill='white' font-family='system-ui'>Q</text></svg>" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="projector">
+
+  <!-- Closed banner (hidden by default) -->
+  <div id="closed-banner" class="closed-banner hidden">This session has ended.</div>
+
+  <main class="shell">
+
+    <!-- Top bar -->
+    <header class="spread reveal reveal-1" style="margin-bottom: var(--s-6);">
+      <a href="index.html" class="logo">
+        <span class="logo-icon">Q</span>
+        Quick Ticket
+      </a>
+      <div class="row" style="gap: var(--s-3);">
+        <span class="badge badge--live" id="status-badge">Live</span>
+        <span class="mono muted" style="font-size: 0.85rem;" id="response-count">0 responses</span>
+      </div>
+    </header>
+
+    <!-- Loading state (shown initially) -->
+    <div id="loading-view" class="card reveal reveal-2">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p class="muted">Loading session…</p>
+      </div>
+    </div>
+
+    <!-- Error state (hidden) -->
+    <div id="error-view" class="card hidden">
+      <div class="error-state">
+        <div class="error-icon">!</div>
+        <h2 id="error-title">Session not found</h2>
+        <p id="error-message">This session may have expired or the code might be wrong.</p>
+        <a href="index.html" class="btn btn--primary">Back to home</a>
+      </div>
+    </div>
+
+    <!-- Session card (hidden until loaded) -->
+    <div id="session-view" class="card hidden reveal reveal-2">
+      <div class="spread" style="align-items: flex-start; flex-wrap: wrap; gap: var(--s-6);">
+        <!-- Question -->
+        <div style="flex: 1; min-width: 200px;">
+          <p class="label" id="activity-label">Loading…</p>
+          <h1 id="question-text" style="font-size: clamp(1.5rem, 4vw, 2.5rem); margin-top: var(--s-2); max-width: 28ch;">
+            …
+          </h1>
+        </div>
+
+        <!-- Room code -->
+        <div class="center" style="flex-shrink: 0;">
+          <p class="room-code-label">Room code</p>
+          <div class="room-code" id="room-code">------</div>
+          <button class="copy-btn" id="copy-code-btn" title="Copy room code">Copy code</button>
+          <p class="caption mono" style="margin-top: var(--s-2);">
+            Join at <strong id="join-url">quick-ticket.app</strong>
+          </p>
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <!-- Results area -->
+      <div id="results">
+        <div class="empty-state">
+          <div class="empty-icon">📡</div>
+          <p>Waiting for the first response…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Host controls -->
+    <div id="host-controls" class="row row--wrap reveal reveal-4 hidden" style="margin-top: var(--s-5); justify-content: center; gap: var(--s-3);">
+      <button id="end-btn" class="btn btn--danger" type="button">End session</button>
+      <button id="qr-btn" class="btn btn--secondary" type="button">Show QR code</button>
+    </div>
+  </main>
+
+  <!-- Floating reaction layer -->
+  <div id="float-layer" style="position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 50;"></div>
+
+  <!-- QR Modal (hidden) -->
+  <div id="qr-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <button class="modal-close" id="qr-close">✕</button>
+      <p class="label" style="margin-bottom: var(--s-2);">Scan to join</p>
+      <div class="qr-container" id="qr-target"></div>
+      <div class="room-code mono" id="qr-code-display" style="font-size: 2rem; margin-top: var(--s-3);"></div>
+      <p class="caption" style="margin-top: var(--s-2);" id="qr-url-display"></p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getRoomCodeFromURL } from './js/utils.js';
+    import {
+      subscribeToSession, closeSession,
+      renderSessionInfo, renderPollResults, renderEmojiResults, spawnFloatingEmoji,
+    } from './js/host.js';
+
+    const code = getRoomCodeFromURL();
+    const resultsEl = document.getElementById('results');
+    const floatLayer = document.getElementById('float-layer');
+    const loadingView = document.getElementById('loading-view');
+    const errorView = document.getElementById('error-view');
+    const sessionView = document.getElementById('session-view');
+    const hostControls = document.getElementById('host-controls');
+
+    document.getElementById('room-code').textContent = code || '------';
+    document.getElementById('join-url').textContent =
+      window.location.host || 'quick-ticket.app';
+
+    function showError(title, message) {
+      loadingView.classList.add('hidden');
+      sessionView.classList.add('hidden');
+      hostControls.classList.add('hidden');
+      errorView.classList.remove('hidden');
+      document.getElementById('error-title').textContent = title;
+      document.getElementById('error-message').textContent = message;
+    }
+
+    function showSession() {
+      loadingView.classList.add('hidden');
+      errorView.classList.add('hidden');
+      sessionView.classList.remove('hidden');
+      hostControls.classList.remove('hidden');
+    }
+
+    if (!code) {
+      showError('No room code', 'Add a ?code= parameter to the URL or create a new session.');
+    } else {
+      let session = null;
+      let prevResponseCount = 0;
+      let firstLoad = true;
+
+      subscribeToSession(code, {
+        onSession: (data) => {
+          session = data;
+          if (firstLoad) { showSession(); firstLoad = false; }
+          renderSessionInfo(session);
+
+          // Handle session closed
+          if (data.status === 'closed') {
+            document.getElementById('closed-banner').classList.remove('hidden');
+            document.getElementById('end-btn').disabled = true;
+            document.getElementById('end-btn').textContent = 'Ended';
+          }
+        },
+        onResponses: (responses) => {
+          if (!session) return;
+
+          if (session.type === 'poll' || session.type === 'quiz') {
+            renderPollResults(resultsEl, session, responses);
+          } else if (session.type === 'emoji') {
+            renderEmojiResults(resultsEl, responses);
+            const newResponses = responses.slice(prevResponseCount);
+            newResponses.forEach((r) => {
+              if (r.emoji) spawnFloatingEmoji(floatLayer, r.emoji);
+            });
+          }
+          prevResponseCount = responses.length;
+        },
+        onError: (err) => {
+          console.error('Session error:', err);
+          showError('Session unavailable', err.message);
+        },
+      });
+    }
+
+    // End session
+    document.getElementById('end-btn').addEventListener('click', async () => {
+      if (!confirm('End this session? Students won\'t be able to vote anymore.')) return;
+      try {
+        await closeSession(code);
+      } catch (err) {
+        alert('Could not close: ' + err.message);
+      }
+    });
+
+    // Copy room code
+    document.getElementById('copy-code-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('copy-code-btn');
+      try {
+        const playURL = `${window.location.origin}/play.html?code=${code}`;
+        await navigator.clipboard.writeText(playURL);
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy code'; btn.classList.remove('copied'); }, 2000);
+      } catch {
+        // Fallback: copy just the code
+        try {
+          await navigator.clipboard.writeText(code);
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = 'Copy code'; }, 2000);
+        } catch { /* clipboard not available */ }
+      }
+    });
+
+    // QR code modal
+    const qrModal = document.getElementById('qr-modal');
+
+    document.getElementById('qr-btn').addEventListener('click', async () => {
+      const playURL = `${window.location.origin}/play.html?code=${code}`;
+      document.getElementById('qr-code-display').textContent = code;
+      document.getElementById('qr-url-display').textContent = playURL;
+
+      const target = document.getElementById('qr-target');
+      target.innerHTML = '';
+
+      // Use QR code API (no library needed)
+      const qrImg = document.createElement('img');
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(playURL)}`;
+      qrImg.alt = 'QR code to join session';
+      qrImg.width = 200;
+      qrImg.height = 200;
+      qrImg.style.borderRadius = '8px';
+      target.appendChild(qrImg);
+
+      qrModal.classList.remove('hidden');
+    });
+
+    document.getElementById('qr-close').addEventListener('click', () => {
+      qrModal.classList.add('hidden');
+    });
+
+    qrModal.addEventListener('click', (e) => {
+      if (e.target === qrModal) qrModal.classList.add('hidden');
+    });
+
+    // Escape key closes modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !qrModal.classList.contains('hidden')) {
+        qrModal.classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

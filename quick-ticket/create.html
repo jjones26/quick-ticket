@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create a Session — Quick Ticket</title>
+  <meta name="description" content="Create a live poll, emoji reaction, or quiz for your classroom." />
+  <meta name="theme-color" content="#10B981" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='80' height='80' x='10' y='10' rx='16' fill='%2310B981'/><text x='50' y='68' font-size='52' font-weight='800' text-anchor='middle' fill='white' font-family='system-ui'>Q</text></svg>" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <main class="shell" style="max-width: 540px;">
+
+    <!-- Nav -->
+    <header class="spread reveal reveal-1" style="margin-bottom: var(--s-6);">
+      <a href="index.html" class="logo">
+        <span class="logo-icon">Q</span>
+        Quick Ticket
+      </a>
+    </header>
+
+    <h1 class="reveal reveal-1" style="font-size: 1.75rem; margin-bottom: var(--s-2);">Create a session</h1>
+    <p class="muted reveal reveal-1" style="margin-bottom: var(--s-6);">Pick a type, write your question, and you're live.</p>
+
+    <!-- Step 1: Activity type -->
+    <div class="card reveal reveal-2 stack-lg" style="margin-bottom: var(--s-4);">
+      <p class="label">Activity type</p>
+
+      <div class="row row--wrap" style="gap: var(--s-3);">
+        <button class="btn--type type-btn" data-type="poll">
+          <span class="type-icon">📊</span>
+          Poll
+        </button>
+        <button class="btn--type type-btn" data-type="emoji">
+          <span class="type-icon">😀</span>
+          Reactions
+        </button>
+        <button class="btn--type type-btn" data-type="quiz">
+          <span class="type-icon">✅</span>
+          Quiz
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Configure -->
+    <div id="step-config" class="card hidden stack-lg">
+      <div class="field">
+        <label for="question">Question or prompt</label>
+        <input id="question" class="input" type="text" placeholder="e.g., How confident are you with today's material?" maxlength="200" />
+      </div>
+
+      <!-- Options (poll & quiz) -->
+      <div id="options-block" class="stack hidden">
+        <p class="label">Answer options</p>
+        <div id="options-list" class="stack"></div>
+        <button id="add-option" class="btn btn--ghost" type="button" style="align-self: flex-start;">+ Add option</button>
+        <p id="quiz-hint" class="caption hidden">
+          Click the ✓ next to an option to mark it as the correct answer.
+        </p>
+      </div>
+
+      <hr class="divider" />
+
+      <button id="create-btn" class="btn btn--primary btn--lg btn--block" type="button">
+        Create session →
+      </button>
+    </div>
+  </main>
+
+  <script type="module">
+    import { generateRoomCode } from './js/utils.js';
+    import { createSession } from './js/create.js';
+
+    const stepConfig = document.getElementById('step-config');
+    const optionsBlock = document.getElementById('options-block');
+    const optionsList = document.getElementById('options-list');
+    const addOptionBtn = document.getElementById('add-option');
+    const quizHint = document.getElementById('quiz-hint');
+    const createBtn = document.getElementById('create-btn');
+
+    let activityType = null;
+    let correctIndex = null;
+
+    document.querySelectorAll('.type-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        activityType = btn.dataset.type;
+        document.querySelectorAll('.type-btn').forEach((b) => {
+          b.classList.toggle('selected', b === btn);
+        });
+        stepConfig.classList.remove('hidden');
+        optionsBlock.classList.toggle('hidden', activityType === 'emoji');
+        quizHint.classList.toggle('hidden', activityType !== 'quiz');
+        if (optionsList.children.length === 0 && activityType !== 'emoji') {
+          addOption(); addOption();
+        }
+        stepConfig.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    function addOption() {
+      if (optionsList.children.length >= 6) return;
+      const idx = optionsList.children.length;
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `
+        <input class="input opt-input" type="text" placeholder="Option ${idx + 1}" maxlength="80" style="flex: 1;" />
+        <button class="btn btn--ghost mark-correct" type="button" data-idx="${idx}" title="Mark correct" style="padding: var(--s-2) var(--s-3); font-size: 1.1rem;">✓</button>
+        <button class="btn btn--ghost remove-opt" type="button" title="Remove" style="padding: var(--s-2) var(--s-3);">✕</button>
+      `;
+      optionsList.appendChild(row);
+      row.querySelector('.remove-opt').addEventListener('click', () => {
+        if (optionsList.children.length <= 2) return;
+        row.remove();
+      });
+      row.querySelector('.mark-correct').addEventListener('click', () => {
+        if (activityType !== 'quiz') return;
+        const allRows = [...optionsList.children];
+        correctIndex = allRows.indexOf(row);
+        allRows.forEach((r, i) => {
+          const mark = r.querySelector('.mark-correct');
+          mark.style.color = i === correctIndex ? 'var(--green)' : '';
+          mark.style.fontWeight = i === correctIndex ? '800' : '';
+        });
+      });
+    }
+    addOptionBtn.addEventListener('click', addOption);
+
+    createBtn.addEventListener('click', async () => {
+      const question = document.getElementById('question').value.trim();
+      if (!activityType) { alert('Pick an activity type.'); return; }
+      if (!question) { document.getElementById('question').focus(); return; }
+
+      // Gather options for poll/quiz
+      let options = [];
+      if (activityType !== 'emoji') {
+        const inputs = optionsList.querySelectorAll('.opt-input');
+        options = [...inputs].map((inp) => inp.value.trim()).filter(Boolean);
+        if (options.length < 2) { alert('Add at least 2 options.'); return; }
+      }
+
+      if (activityType === 'quiz' && correctIndex === null) {
+        alert('Mark one option as the correct answer.'); return;
+      }
+
+      // Disable button while creating
+      createBtn.disabled = true;
+      createBtn.textContent = 'Creating…';
+
+      try {
+        const { code } = await createSession({
+          type: activityType,
+          question,
+          options,
+          correctIndex: activityType === 'quiz' ? correctIndex : null,
+        });
+        window.location.href = `host.html?code=${code}`;
+      } catch (err) {
+        console.error('Create failed:', err);
+        alert('Failed to create session: ' + err.message);
+        createBtn.disabled = false;
+        createBtn.textContent = 'Create session →';
+      }
+    });
+  </script>
+</body>
+</html>
