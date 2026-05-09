@@ -12,7 +12,7 @@ Inspired by Kahoot, minus the trivia gameshow energy. Built for serious classroo
 2. Click "Create a session"
 3. Choose activity type
 4. Add information as needed, then click create session
-5. Students visit quick-ticket1.netlify.app and join via room code or QR code
+5. Students visit https://quick-ticket1.netlify.app/ and join via room code or QR code
 
 ## Tech stack
 
