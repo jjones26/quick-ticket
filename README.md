@@ -8,15 +8,15 @@ Inspired by Kahoot, minus the trivia gameshow energy. Built for serious classroo
 
 ## How to Use
 
-1. Go to https://quick-ticket1.netlify.app/
+1. Go to https://quickticket.dev/
 2. Click "Create a session"
 3. Choose activity type
 4. Add information as needed, then click create session
-5. Students visit https://quick-ticket1.netlify.app/ and join via room code or QR code
+5. Students visit https://quickticket.dev/ and join via room code or QR code
 
 ## Tech stack
 
-- **Frontend:** Vanilla HTML / CSS / JS (ES modules, no build step)
+- **Frontend:** HTML / CSS / JS (ES modules, no build step)
 - **Backend:** Firebase Firestore (real-time database)
 - **Hosting:** Netlify (free tier)
 - **Cost:** $0 at classroom scale
