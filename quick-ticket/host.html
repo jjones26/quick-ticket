@@ -91,6 +91,11 @@
       <button id="end-btn" class="btn btn--danger" type="button">End session</button>
       <button id="qr-btn" class="btn btn--secondary" type="button">Show QR code</button>
     </div>
+
+    <!-- Create another (shown after session ends) -->
+    <div id="create-another" class="create-another hidden">
+      <a href="create.html" class="btn btn--primary btn--lg">Create another session →</a>
+    </div>
   </main>
 
   <!-- Floating reaction layer -->
@@ -112,6 +117,7 @@
     import {
       subscribeToSession, closeSession,
       renderSessionInfo, renderPollResults, renderEmojiResults, spawnFloatingEmoji,
+      renderShortAnswerResults,
     } from './js/host.js';
 
     const code = getRoomCodeFromURL();
@@ -160,6 +166,7 @@
             document.getElementById('closed-banner').classList.remove('hidden');
             document.getElementById('end-btn').disabled = true;
             document.getElementById('end-btn').textContent = 'Ended';
+            document.getElementById('create-another').classList.remove('hidden');
           }
         },
         onResponses: (responses) => {
@@ -173,6 +180,8 @@
             newResponses.forEach((r) => {
               if (r.emoji) spawnFloatingEmoji(floatLayer, r.emoji);
             });
+          } else if (session.type === 'short') {
+            renderShortAnswerResults(resultsEl, responses);
           }
           prevResponseCount = responses.length;
         },
