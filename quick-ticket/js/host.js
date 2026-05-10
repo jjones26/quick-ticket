@@ -83,6 +83,9 @@ export function renderSessionInfo(session) {
   }
 }
 
+// Track whether the host has revealed the correct answer
+let quizAnswerRevealed = false;
+
 /**
  * Render poll/quiz bar chart into the results container.
  */
@@ -93,22 +96,27 @@ export function renderPollResults(container, session, responses) {
   const countEl = document.getElementById('response-count');
   if (countEl) countEl.textContent = pluralize(total, 'response');
 
+  const isQuiz = session.type === 'quiz' && session.correctIndex !== null;
+
   // Build bars
   let html = '';
   session.options.forEach((label, i) => {
     const count = byOption[i];
     const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    const isCorrect = i === session.correctIndex;
 
-    // For quizzes, highlight correct answer
     let fillClass = 'bar-fill';
-    if (session.type === 'quiz' && session.correctIndex !== null) {
-      fillClass += i === session.correctIndex ? ' bar-fill--correct' : '';
+    let labelExtra = '';
+
+    if (isQuiz && quizAnswerRevealed) {
+      fillClass += isCorrect ? ' bar-fill--correct' : ' bar-fill--wrong';
+      labelExtra = isCorrect ? ' <span style="color: var(--green); font-weight: 700;">✓ Correct</span>' : '';
     }
 
     html += `
       <div class="bar-item">
         <div class="bar-header">
-          <span class="bar-label">${escapeHTML(label)}</span>
+          <span class="bar-label">${escapeHTML(label)}${labelExtra}</span>
           <span class="bar-count">${count} (${pct}%)</span>
         </div>
         <div class="bar-track">
@@ -118,7 +126,29 @@ export function renderPollResults(container, session, responses) {
     `;
   });
 
+  // Add reveal button for quizzes
+  if (isQuiz) {
+    html += `
+      <div style="text-align: center; margin-top: var(--s-4);">
+        <button class="btn ${quizAnswerRevealed ? 'btn--ghost' : 'btn--primary'}" id="reveal-answer-btn" type="button">
+          ${quizAnswerRevealed ? '🔒 Hide answer' : '👁 Show correct answer'}
+        </button>
+      </div>
+    `;
+  }
+
   container.innerHTML = html;
+
+  // Bind reveal toggle
+  if (isQuiz) {
+    const revealBtn = document.getElementById('reveal-answer-btn');
+    if (revealBtn) {
+      revealBtn.addEventListener('click', () => {
+        quizAnswerRevealed = !quizAnswerRevealed;
+        renderPollResults(container, session, responses);
+      });
+    }
+  }
 }
 
 /**
