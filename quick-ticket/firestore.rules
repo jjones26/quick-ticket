@@ -17,7 +17,7 @@ service cloud.firestore {
       allow read: if true;
 
       allow create: if
-        request.resource.data.type in ['poll', 'emoji', 'quiz']
+        request.resource.data.type in ['poll', 'emoji', 'quiz', 'short']
         && request.resource.data.question is string
         && request.resource.data.question.size() <= 300
         && request.resource.data.status == 'open'
@@ -41,7 +41,10 @@ service cloud.firestore {
             && request.resource.data.optionIndex >= 0
             && request.resource.data.optionIndex <= 10)
           || (request.resource.data.emoji is string
-            && request.resource.data.emoji.size() <= 8);
+            && request.resource.data.emoji.size() <= 8)
+          || (request.resource.data.text is string
+            && request.resource.data.text.size() >= 1
+            && request.resource.data.text.size() <= 200);
         allow update, delete: if false;
       }
     }
