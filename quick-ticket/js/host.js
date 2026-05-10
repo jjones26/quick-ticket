@@ -63,6 +63,7 @@ const TYPE_LABELS = {
   poll: '📊 Poll',
   emoji: '😀 Reactions',
   quiz: '✅ Quiz',
+  short: '✏️ Short Answer',
 };
 
 /**
@@ -165,6 +166,89 @@ export function spawnFloatingEmoji(floatLayer, emoji) {
   el.style.bottom = '0';
   floatLayer.appendChild(el);
   el.addEventListener('animationend', () => el.remove());
+}
+
+// ---- Short answer with reveal mode -----------------------
+
+// Track which responses the host has revealed
+const revealedIds = new Set();
+let revealAllMode = false;
+
+/**
+ * Render short answer responses with reveal mode.
+ * Teacher must click each response to show it (moderation).
+ */
+export function renderShortAnswerResults(container, responses) {
+  const textResponses = responses.filter((r) => typeof r.text === 'string');
+
+  const countEl = document.getElementById('response-count');
+  if (countEl) countEl.textContent = pluralize(textResponses.length, 'response');
+
+  if (textResponses.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📡</div>
+        <p>Waiting for the first response…</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Build the reveal-all bar
+  const hiddenCount = textResponses.filter((_, i) => !revealAllMode && !revealedIds.has(i)).length;
+  let html = `
+    <div class="reveal-all-bar">
+      <p>${textResponses.length} responses · ${hiddenCount} hidden</p>
+      <button class="btn btn--ghost" id="reveal-all-btn" type="button">
+        ${revealAllMode ? '🔒 Hide all' : '👁 Reveal all'}
+      </button>
+    </div>
+  `;
+
+  html += '<div class="response-feed" id="response-feed">';
+  textResponses.forEach((r, i) => {
+    const isRevealed = revealAllMode || revealedIds.has(i);
+    if (isRevealed) {
+      html += `
+        <div class="response-card">
+          <div class="response-text">${escapeHTML(r.text)}</div>
+          <div class="response-meta">#${i + 1}</div>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="response-card response-card--hidden" data-reveal-idx="${i}">
+          <div class="response-text">${escapeHTML(r.text)}</div>
+          <button class="reveal-btn">Click to reveal</button>
+        </div>
+      `;
+    }
+  });
+  html += '</div>';
+
+  container.innerHTML = html;
+
+  // Reveal-all toggle
+  const revealAllBtn = document.getElementById('reveal-all-btn');
+  if (revealAllBtn) {
+    revealAllBtn.addEventListener('click', () => {
+      revealAllMode = !revealAllMode;
+      renderShortAnswerResults(container, responses);
+    });
+  }
+
+  // Individual reveal clicks
+  container.querySelectorAll('.response-card--hidden').forEach((card) => {
+    card.addEventListener('click', () => {
+      const idx = parseInt(card.dataset.revealIdx, 10);
+      revealedIds.add(idx);
+      renderShortAnswerResults(container, responses);
+    });
+  });
+
+  // Auto-scroll to bottom for new responses
+  const feed = document.getElementById('response-feed');
+  if (feed) feed.scrollTop = feed.scrollHeight;
 }
 
 // ---- Helpers ---------------------------------------------
