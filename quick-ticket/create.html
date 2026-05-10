@@ -45,6 +45,10 @@
           <span class="type-icon">✅</span>
           Quiz
         </button>
+        <button class="btn--type type-btn" data-type="short">
+          <span class="type-icon">✏️</span>
+          Short Answer
+        </button>
       </div>
     </div>
 
@@ -94,9 +98,9 @@
           b.classList.toggle('selected', b === btn);
         });
         stepConfig.classList.remove('hidden');
-        optionsBlock.classList.toggle('hidden', activityType === 'emoji');
+        optionsBlock.classList.toggle('hidden', activityType === 'emoji' || activityType === 'short');
         quizHint.classList.toggle('hidden', activityType !== 'quiz');
-        if (optionsList.children.length === 0 && activityType !== 'emoji') {
+        if (optionsList.children.length === 0 && activityType !== 'emoji' && activityType !== 'short') {
           addOption(); addOption();
         }
         stepConfig.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -138,7 +142,7 @@
 
       // Gather options for poll/quiz
       let options = [];
-      if (activityType !== 'emoji') {
+      if (activityType !== 'emoji' && activityType !== 'short') {
         const inputs = optionsList.querySelectorAll('.opt-input');
         options = [...inputs].map((inp) => inp.value.trim()).filter(Boolean);
         if (options.length < 2) { alert('Add at least 2 options.'); return; }
