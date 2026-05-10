@@ -634,3 +634,107 @@ h1, h2, h3 {
 .copy-btn.copied {
   color: var(--green-hover);
 }
+
+/* ---- Short answer response feed -------------------------- */
+.response-feed {
+  max-height: 500px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+.response-card {
+  background: var(--bg);
+  border-radius: var(--r-md);
+  padding: var(--s-4);
+  margin-bottom: var(--s-3);
+  animation: slideIn 0.3s ease-out;
+  position: relative;
+}
+.response-card--hidden {
+  background: var(--bg);
+  border: 1.5px dashed var(--border);
+  color: var(--ink-tertiary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.response-card--hidden:hover {
+  border-color: var(--green);
+  background: var(--surface-alt);
+}
+.response-card--hidden .response-text {
+  filter: blur(6px);
+  user-select: none;
+}
+.response-text {
+  font-size: 1rem;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.response-meta {
+  font-size: 0.75rem;
+  color: var(--ink-tertiary);
+  margin-top: var(--s-2);
+}
+.reveal-btn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--green);
+  margin-top: var(--s-2);
+}
+.reveal-btn:hover { color: var(--green-hover); }
+
+.reveal-all-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-alt);
+  border-radius: var(--r-sm);
+}
+.reveal-all-bar p {
+  font-size: 0.85rem;
+  color: var(--ink-secondary);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Short answer text input (student side) -------------- */
+.short-answer-area {
+  position: relative;
+}
+.short-answer-input {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-4);
+  font-size: 1rem;
+  line-height: 1.5;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.short-answer-input:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px var(--green-glow);
+}
+.char-count {
+  position: absolute;
+  bottom: var(--s-3);
+  right: var(--s-4);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-tertiary);
+}
+.char-count--warn { color: var(--red); }
+
+/* ---- Create another button ------------------------------- */
+.create-another {
+  margin-top: var(--s-5);
+  text-align: center;
+}
