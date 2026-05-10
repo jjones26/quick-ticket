@@ -13,6 +13,7 @@ const TYPE_LABELS = {
   poll: '📊 Poll',
   emoji: '😀 Reactions',
   quiz: '✅ Quiz',
+  short: '✏️ Short Answer',
 };
 
 const EMOJIS = ['👍', '👎', '❤️', '😕', '🤔', '🎉'];
@@ -55,6 +56,18 @@ export async function submitEmoji(code, emoji) {
 }
 
 /**
+ * Submit a short answer response. One per browser.
+ */
+export async function submitShortAnswer(code, text) {
+  if (hasVotedInRoom(code)) throw new Error('Already responded.');
+  await addDoc(collection(db, 'sessions', code, 'responses'), {
+    text: text.slice(0, 200),
+    ts: serverTimestamp(),
+  });
+  recordVote(code, 'short');
+}
+
+/**
  * Render the vote UI into the given container based on session type.
  * @param {HTMLElement} container - the #vote-area element
  * @param {object} session - session data
@@ -71,6 +84,8 @@ export function renderVoteUI(container, session, callbacks) {
     renderOptionButtons(container, session, callbacks);
   } else if (session.type === 'emoji') {
     renderEmojiPad(container, session, callbacks);
+  } else if (session.type === 'short') {
+    renderShortAnswerInput(container, session, callbacks);
   }
 }
 
@@ -168,6 +183,55 @@ function renderEmojiPad(container, session, callbacks) {
         console.error('Emoji submit failed:', err);
       }
     });
+  });
+}
+
+// ---- Short answer input ----------------------------------
+
+function renderShortAnswerInput(container, session, callbacks) {
+  const MAX_CHARS = 200;
+  container.innerHTML = `
+    <div class="short-answer-area vote-option-reveal">
+      <textarea
+        id="short-input"
+        class="short-answer-input"
+        placeholder="Type your response here…"
+        maxlength="${MAX_CHARS}"
+      ></textarea>
+      <span class="char-count" id="char-count">${MAX_CHARS}</span>
+    </div>
+    <button class="btn btn--primary btn--block btn--lg vote-option-reveal" id="submit-short" type="button" style="margin-top: var(--s-4);">
+      Submit →
+    </button>
+  `;
+
+  const input = document.getElementById('short-input');
+  const charCount = document.getElementById('char-count');
+  const submitBtn = document.getElementById('submit-short');
+
+  input.addEventListener('input', () => {
+    const remaining = MAX_CHARS - input.value.length;
+    charCount.textContent = remaining;
+    charCount.classList.toggle('char-count--warn', remaining <= 20);
+  });
+
+  submitBtn.addEventListener('click', async () => {
+    const text = input.value.trim();
+    if (!text) { input.focus(); return; }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+
+    try {
+      await submitShortAnswer(session.code, text);
+      setTimeout(() => {
+        if (callbacks.onVoted) callbacks.onVoted();
+      }, 600);
+    } catch (err) {
+      console.error('Submit failed:', err);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Error — try again';
+    }
   });
 }
 
