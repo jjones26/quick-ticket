@@ -13,12 +13,12 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.0/fireba
 import { getFirestore }  from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js';
 
 const firebaseConfig = {
-  apiKey:            'AIzaSyBvfHj5_BbcIzYRBoL07AeUFRxlxsVjcO8',
-  authDomain:        'quick-ticket-1217.firebaseapp.com',
-  projectId:         'quick-ticket-1217',
-  storageBucket:     'quick-ticket-1217.firebasestorage.app',
-  messagingSenderId: '46166506712',
-  appId:             '1:46166506712:web:135bfc129e9df326a2ebad',
+  apiKey:            '',
+  authDomain:        '',
+  projectId:         '',
+  storageBucket:     '',
+  messagingSenderId: '',
+  appId:             '',
 };
 
 export const app = initializeApp(firebaseConfig);
